@@ -26,16 +26,25 @@ public sealed class ProviderIngressDatabaseInitializerHostedService : IHostedSer
             return;
         }
 
-        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-        if (string.Equals(_options.Value.DatabaseProvider, "sqlite", StringComparison.OrdinalIgnoreCase))
+        try
         {
-            await dbContext.Database.EnsureCreatedAsync(cancellationToken);
-            _logger.LogInformation("Provider ingress SQLite database ensured for local/dev usage.");
-            return;
-        }
+            await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+            if (string.Equals(_options.Value.DatabaseProvider, "sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+                _logger.LogInformation("Provider ingress SQLite database ensured for local/dev usage.");
+                return;
+            }
 
-        await dbContext.Database.MigrateAsync(cancellationToken);
-        _logger.LogInformation("Provider ingress database migrations applied for provider '{DatabaseProvider}'.", _options.Value.DatabaseProvider);
+            await dbContext.Database.MigrateAsync(cancellationToken);
+            _logger.LogInformation("Provider ingress database migrations applied for provider '{DatabaseProvider}'.", _options.Value.DatabaseProvider);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Provider ingress database initialization failed. The host will continue running, but provider-ingress persistence is unavailable until the database is reachable.");
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

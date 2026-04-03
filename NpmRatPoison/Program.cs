@@ -13,6 +13,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using System.Reflection;
 using System.Text;
+using System.Diagnostics;
 using System.Threading.RateLimiting;
 using VapeCache.Abstractions.Caching;
 using VapeCache.Extensions.Logging;
@@ -20,6 +21,8 @@ using VapeCache.Infrastructure.Caching;
 
 public static class Program
 {
+    private const string DefaultDashboardUrl = "http://127.0.0.1:5100";
+
     public static async Task<int> Main(string[] args)
     {
         var options = CliOptions.Parse(args);
@@ -112,9 +115,9 @@ public static class Program
             builder.Host.UseWindowsService();
         }
 
-        if ((options.UiMode || options.ServiceMode) && !string.IsNullOrWhiteSpace(options.UiUrls))
+        if (options.UiMode || options.ServiceMode)
         {
-            builder.WebHost.UseUrls(options.UiUrls);
+            builder.WebHost.UseUrls(string.IsNullOrWhiteSpace(options.UiUrls) ? DefaultDashboardUrl : options.UiUrls);
         }
 
         builder.Services.AddLogging();
@@ -501,11 +504,13 @@ public static class Program
             {
                 var assistReport = SafeDirectoryAssistReport.FromAutoTriageReport(autoReport);
                 assistReport.Print();
+                await ApplySafeDirectoryAssistAsync(autoReport.GetSafeDirectoryPaths(), options.ApplySafeDirectoryAssist);
                 await reportWriter.WriteAsync(options.ReportDirectory, "safe-directory-assist", assistReport);
                 return ScanExitCodeEvaluator.GetExitCode(autoReport);
             }
 
             autoReport.Print();
+            await ApplySafeDirectoryAssistAsync(autoReport.GetSafeDirectoryPaths(), options.ApplySafeDirectoryAssist);
             PrintSafeDirectoryAssist(autoReport.GetSafeDirectoryCommands(), options.SafeDirectoryAssist);
             await reportWriter.WriteAsync(options.ReportDirectory, "auto-triage", autoReport);
             return ScanExitCodeEvaluator.GetExitCode(autoReport);
@@ -519,11 +524,13 @@ public static class Program
             {
                 var assistReport = SafeDirectoryAssistReport.FromAllDriveScanReport(allDriveReport);
                 assistReport.Print();
+                await ApplySafeDirectoryAssistAsync(allDriveReport.GetSafeDirectoryPaths(), options.ApplySafeDirectoryAssist);
                 await reportWriter.WriteAsync(options.ReportDirectory, "safe-directory-assist", assistReport);
                 return ScanExitCodeEvaluator.GetExitCode(allDriveReport);
             }
 
             allDriveReport.Print();
+            await ApplySafeDirectoryAssistAsync(allDriveReport.GetSafeDirectoryPaths(), options.ApplySafeDirectoryAssist);
             PrintSafeDirectoryAssist(allDriveReport.GetSafeDirectoryCommands(), options.SafeDirectoryAssist);
             await reportWriter.WriteAsync(options.ReportDirectory, "all-drives", allDriveReport);
             return ScanExitCodeEvaluator.GetExitCode(allDriveReport);
@@ -535,6 +542,7 @@ public static class Program
         {
             var assistReport = SafeDirectoryAssistReport.FromCleanupReport(cleanupReport);
             assistReport.Print();
+            await ApplySafeDirectoryAssistAsync(cleanupReport.GetSafeDirectoryPaths(), options.ApplySafeDirectoryAssist);
             await reportWriter.WriteAsync(options.ReportDirectory, "safe-directory-assist", assistReport);
             return ScanExitCodeEvaluator.GetExitCode(cleanupReport);
         }
@@ -545,6 +553,7 @@ public static class Program
             Console.WriteLine();
             Console.WriteLine("Host remediation is disabled by default. Re-run with --host-remediation to sanitize shell profiles and host artifacts.");
         }
+        await ApplySafeDirectoryAssistAsync(cleanupReport.GetSafeDirectoryPaths(), options.ApplySafeDirectoryAssist);
         PrintSafeDirectoryAssist(cleanupReport.GetSafeDirectoryCommands(), options.SafeDirectoryAssist);
         await reportWriter.WriteAsync(options.ReportDirectory, "cleanup", cleanupReport);
         return ScanExitCodeEvaluator.GetExitCode(cleanupReport);
@@ -584,6 +593,115 @@ public static class Program
         await dbContext.Database.MigrateAsync();
     }
 
+    private static async Task ApplySafeDirectoryAssistAsync(IEnumerable<string> repositoryPaths, bool enabled)
+    {
+        if (!enabled)
+        {
+            return;
+        }
+
+        var requestedPaths = repositoryPaths
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(path => Path.GetFullPath(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (requestedPaths.Count == 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine("SafeDirectoryAssistApply: 0");
+            Console.WriteLine("No safe.directory blocks were detected.");
+            return;
+        }
+
+        var existingPaths = await GetExistingSafeDirectoriesAsync();
+        var appliedCount = 0;
+        var skippedCount = 0;
+
+        Console.WriteLine();
+        Console.WriteLine($"SafeDirectoryAssistApply: {requestedPaths.Count}");
+
+        foreach (var path in requestedPaths)
+        {
+            var normalized = path.Replace('\\', '/');
+            if (existingPaths.Contains(normalized))
+            {
+                skippedCount++;
+                Console.WriteLine($" - skipped: {normalized}");
+                continue;
+            }
+
+            var result = await RunGitConfigAsync("config", "--global", "--add", "safe.directory", normalized);
+            if (!result.Success)
+            {
+                Console.WriteLine($" - failed: {normalized}");
+                Console.WriteLine($"   {result.Error}");
+                continue;
+            }
+
+            appliedCount++;
+            existingPaths.Add(normalized);
+            Console.WriteLine($" - applied: {normalized}");
+        }
+
+        Console.WriteLine($"SafeDirectoryAssistApplyResult: applied={appliedCount}, skipped={skippedCount}");
+    }
+
+    private static async Task<HashSet<string>> GetExistingSafeDirectoriesAsync()
+    {
+        var result = await RunGitConfigAsync("config", "--global", "--get-all", "safe.directory");
+        if (!result.Success)
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        return result.Output
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim().Replace('\\', '/'))
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static async Task<GitCommandResult> RunGitConfigAsync(params string[] args)
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "git",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            foreach (var arg in args)
+            {
+                startInfo.ArgumentList.Add(arg);
+            }
+
+            using var process = Process.Start(startInfo);
+            if (process is null)
+            {
+                return new GitCommandResult(false, string.Empty, "Failed to start git.");
+            }
+
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            var output = await outputTask;
+            var error = await errorTask;
+
+            return process.ExitCode == 0
+                ? new GitCommandResult(true, output, error)
+                : new GitCommandResult(false, output, error);
+        }
+        catch (Exception ex)
+        {
+            return new GitCommandResult(false, string.Empty, ex.Message);
+        }
+    }
+
     private static string BuildHelpText()
     {
         return """
@@ -593,6 +711,7 @@ Usage:
   NpmRatPoison --help
   NpmRatPoison --version
   NpmRatPoison --apply-provider-ingress-migrations
+  NpmRatPoison --apply-safe-directory-assist [--path <directory> | --all-drives | --auto] [--include-non-github] [--report-dir <directory>]
   NpmRatPoison --generate-provider-api-key --provider-id <provider> [--provider-api-key-name <name>] [--provider-api-key-expiry-days <days>]
   NpmRatPoison --ui [--service] [--urls <url>]
   NpmRatPoison --path <directory> [--dry-run] [--report-dir <directory>]
@@ -607,6 +726,8 @@ Options:
   --version                Show the tool version and exit.
   --apply-provider-ingress-migrations
                            Apply EF Core migrations for the provider ingress database and exit.
+  --apply-safe-directory-assist
+                           Add trusted blocked repositories to git safe.directory automatically.
   --generate-provider-api-key
                            Create a database-backed RSA credential for provider ingress.
   --provider-id <provider> Provider identifier for RSA credential generation.
@@ -644,6 +765,7 @@ Notes:
   Host remediation is opt-in and only applies to scoped cleanup mode.
   Remote GitHub scans prompt for a personal access token when one is not already supplied.
   Provider submissions POST JSON to /api/provider-ingress/v1/submissions using API key id + RSA-PSS signature headers.
+  The dashboard binds to http://127.0.0.1:5100 by default when --ui or --service is used without --urls.
   The Blazor dashboard publishes report artifacts under ./artifacts/dashboard-reports.
 """;
     }
@@ -656,4 +778,6 @@ Notes:
                                    ?? "unknown";
         return $"NpmRatPoison {informationalVersion}";
     }
+
+    private sealed record GitCommandResult(bool Success, string Output, string Error);
 }

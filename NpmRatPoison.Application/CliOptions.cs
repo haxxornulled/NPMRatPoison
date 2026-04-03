@@ -20,6 +20,7 @@ public sealed record CliOptions(
     string? GitHubAccessToken,
     bool GenerateProviderApiKey,
     bool ApplyProviderIngressMigrations,
+    bool ApplySafeDirectoryAssist,
     string? ProviderId,
     string? ProviderApiKeyName,
     int? ProviderApiKeyExpiryDays,
@@ -52,6 +53,7 @@ public sealed record CliOptions(
         string? gitHubAccessToken = null;
         var generateProviderApiKey = false;
         var applyProviderIngressMigrations = false;
+        var applySafeDirectoryAssist = false;
         string? providerId = null;
         string? providerApiKeyName = null;
         int? providerApiKeyExpiryDays = null;
@@ -128,6 +130,13 @@ public sealed record CliOptions(
 
             if (string.Equals(arg, "--safe-directory-assist", StringComparison.OrdinalIgnoreCase))
             {
+                safeDirectoryAssist = true;
+                continue;
+            }
+
+            if (string.Equals(arg, "--apply-safe-directory-assist", StringComparison.OrdinalIgnoreCase))
+            {
+                applySafeDirectoryAssist = true;
                 safeDirectoryAssist = true;
                 continue;
             }
@@ -295,6 +304,7 @@ public sealed record CliOptions(
                 gitHubAccessToken,
                 generateProviderApiKey,
                 applyProviderIngressMigrations,
+                applySafeDirectoryAssist,
                 providerId,
                 providerApiKeyName,
                 providerApiKeyExpiryDays,
@@ -333,6 +343,7 @@ public sealed record CliOptions(
             gitHubAccessToken,
             generateProviderApiKey,
             applyProviderIngressMigrations,
+            applySafeDirectoryAssist,
             providerId,
             providerApiKeyName,
             providerApiKeyExpiryDays,

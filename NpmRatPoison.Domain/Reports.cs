@@ -213,6 +213,14 @@ public sealed class CleanupReport
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToList();
 
+    [JsonIgnore]
+    public IReadOnlyList<string> SafeDirectoryPaths => GitIssues
+        .Where(issue => issue.QueryBlockReason == GitQueryBlockReason.SafeDirectory
+                        && !string.IsNullOrWhiteSpace(issue.RepositoryPath))
+        .Select(issue => issue.RepositoryPath!)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
     public void AddGitBreadcrumb(string message, string? repositoryPath = null)
     {
         GitIssues.Add(GitIssueDetail.CreateBreadcrumb(message, repositoryPath));
@@ -231,6 +239,11 @@ public sealed class CleanupReport
     public IReadOnlyList<string> GetSafeDirectoryCommands()
     {
         return SafeDirectoryCommands;
+    }
+
+    public IReadOnlyList<string> GetSafeDirectoryPaths()
+    {
+        return SafeDirectoryPaths;
     }
 
     public ScanSeverity GetSeverity()
@@ -391,6 +404,15 @@ public sealed class AllDriveScanReport
             .ToList();
     }
 
+    public IReadOnlyList<string> GetSafeDirectoryPaths()
+    {
+        return RepositorySummaries
+            .Where(summary => summary.SafeDirectoryCommands.Count > 0)
+            .Select(summary => summary.RepositoryPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     public ScanSeverity GetSeverity()
     {
         if (Errors.Count > 0)
@@ -522,6 +544,15 @@ public sealed class AutoTriageReport
     {
         return RepositorySummaries
             .SelectMany(summary => summary.SafeDirectoryCommands)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public IReadOnlyList<string> GetSafeDirectoryPaths()
+    {
+        return RepositorySummaries
+            .Where(summary => summary.SafeDirectoryCommands.Count > 0)
+            .Select(summary => summary.RepositoryPath)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }

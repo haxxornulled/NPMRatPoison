@@ -34,6 +34,10 @@ public sealed class DashboardLifecycleService : IHostedLifecycleService
         _dashboardState.SetLifecycle("Running", "Blazor dashboard is ready", address);
         await _dashboardScanCoordinator.RefreshArtifactsAsync(cancellationToken);
         _logger.LogInformation("Dashboard ready at {Address}", address ?? "unknown");
+        if (!string.IsNullOrWhiteSpace(address))
+        {
+            Console.WriteLine($"Dashboard ready: {address}");
+        }
     }
 
     public Task StoppingAsync(CancellationToken cancellationToken)

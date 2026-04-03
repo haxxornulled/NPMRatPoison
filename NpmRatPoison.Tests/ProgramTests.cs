@@ -198,6 +198,37 @@ public class ProgramTests
     }
 
     [Fact]
+    public void CliOptions_Parse_ApplySafeDirectoryAssist_IsCaptured()
+    {
+        var options = CliOptions.Parse([
+            "--all-drives",
+            "--apply-safe-directory-assist"
+        ]);
+
+        Assert.True(options.ApplySafeDirectoryAssist);
+        Assert.True(options.SafeDirectoryAssist);
+        Assert.True(options.AllDrives);
+    }
+
+    [Fact]
+    public async Task ProviderIngressDatabaseInitializerHostedService_StartAsync_DoesNotThrowWhenDatabaseIsUnavailable()
+    {
+        var options = Options.Create(new ProviderIngressOptions
+        {
+            Enabled = true,
+            AutoInitializeDatabase = true,
+            DatabaseProvider = "postgres"
+        });
+
+        var service = new ProviderIngressDatabaseInitializerHostedService(
+            new ThrowingProviderIngressDbContextFactory(),
+            options,
+            NullLogger<ProviderIngressDatabaseInitializerHostedService>.Instance);
+
+        await service.StartAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public async Task ProviderApiKeyService_GenerateAsync_PersistsRsaCredential_AndValidateSignatureAsync_Succeeds()
     {
         var root = CreateTempDirectory();
@@ -1072,6 +1103,19 @@ public class ProgramTests
         public Task<ProviderIngressDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(new ProviderIngressDbContext(_options));
+        }
+    }
+
+    private sealed class ThrowingProviderIngressDbContextFactory : IDbContextFactory<ProviderIngressDbContext>
+    {
+        public ProviderIngressDbContext CreateDbContext()
+        {
+            throw new InvalidOperationException("Simulated database startup failure.");
+        }
+
+        public Task<ProviderIngressDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("Simulated database startup failure.");
         }
     }
 
