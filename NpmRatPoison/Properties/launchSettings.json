@@ -1,7 +1,22 @@
 {
   "profiles": {
-    "NpmRatPoison": {
-      "commandName": "Project"
+    "NpmRatPoison UI": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "applicationUrl": "http://127.0.0.1:5100",
+      "commandLineArgs": "--ui",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "NpmRatPoison Service": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "applicationUrl": "http://127.0.0.1:5100",
+      "commandLineArgs": "--ui --service",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
     },
     "Container (Dockerfile)": {
       "commandName": "Docker"

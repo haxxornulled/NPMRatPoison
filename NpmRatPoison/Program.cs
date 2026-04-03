@@ -279,8 +279,8 @@ public static class Program
         var artifactsRoot = Path.Combine(Directory.GetCurrentDirectory(), "artifacts");
         Directory.CreateDirectory(artifactsRoot);
 
-        app.UseStaticFiles();
         app.UseAntiforgery();
+        app.MapStaticAssets();
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = new PhysicalFileProvider(artifactsRoot),
