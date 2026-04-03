@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://npmratpoison.local/schemas/provider-ingress.schema.v1.json",
+  "title": "NpmRatPoison Provider Ingress Document",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "documentType",
+    "providerDocumentId",
+    "publishedUtc",
+    "payload"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "documentType": {
+      "type": "string",
+      "enum": [
+        "vulnerability-advisory",
+        "patch-bundle",
+        "indicator-bundle",
+        "catalog-delta"
+      ]
+    },
+    "providerDocumentId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "publishedUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "informational",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "maxItems": 64
+    },
+    "payload": {
+      "description": "Provider-specific body. This is preserved verbatim inside the stored ingress envelope."
+    }
+  }
+}

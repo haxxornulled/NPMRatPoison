@@ -1,0 +1,17 @@
+[Unit]
+Description=NpmRatPoison
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/npmratpoison
+ExecStart=/opt/npmratpoison/NpmRatPoison --ui --service --urls http://0.0.0.0:5100
+Restart=always
+RestartSec=10
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ProviderIngress__DatabaseProvider=postgres
+Environment=ConnectionStrings__ProviderIngress=Host=localhost;Port=5432;Database=npmratpoison;Username=npmratpoison;Password=change-me-before-production
+
+[Install]
+WantedBy=multi-user.target

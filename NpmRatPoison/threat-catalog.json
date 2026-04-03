@@ -1,0 +1,115 @@
+{
+  "metadata": {
+    "catalogId": "npmratpoison-default",
+    "version": "2026.04.02.1",
+    "publishedUtc": "2026-04-02T00:00:00Z"
+  },
+  "packages": [
+    {
+      "packageName": "axios",
+      "replacementVersions": {
+        "1.14.1": "1.14.0",
+        "0.30.4": "0.30.3"
+      },
+      "lockPackagePaths": [
+        "node_modules/axios"
+      ],
+      "textIndicators": [
+        "axios@1.14.1",
+        "axios@0.30.4",
+        "\"axios\": \"1.14.1\"",
+        "\"axios\": \"0.30.4\"",
+        "version \"1.14.1\"",
+        "version \"0.30.4\""
+      ]
+    },
+    {
+      "packageName": "plain-crypto-js",
+      "removeWhenPresent": true,
+      "lockPackagePaths": [
+        "node_modules/plain-crypto-js"
+      ],
+      "directoryNames": [
+        "plain-crypto-js"
+      ],
+      "textIndicators": [
+        "plain-crypto-js"
+      ]
+    }
+  ],
+  "commonIndicators": [
+    "sfrclak.com",
+    "142.11.206.73",
+    "packages.npm.org/product0",
+    "packages.npm.org/product1",
+    "packages.npm.org/product2"
+  ],
+  "shellProfileIndicators": [
+    "sfrclak.com",
+    "142.11.206.73",
+    "packages.npm.org/product0",
+    "packages.npm.org/product1",
+    "packages.npm.org/product2"
+  ],
+  "workspaceArtifactNames": [
+    "wt.exe",
+    "6202033.vbs",
+    "6202033.ps1",
+    "ld.py"
+  ],
+  "hostArtifacts": [
+    {
+      "operatingSystems": [
+        "windows"
+      ],
+      "path": "%PROGRAMDATA%\\wt.exe"
+    },
+    {
+      "operatingSystems": [
+        "windows"
+      ],
+      "path": "%TEMP%\\6202033.vbs"
+    },
+    {
+      "operatingSystems": [
+        "windows"
+      ],
+      "path": "%TEMP%\\6202033.ps1"
+    },
+    {
+      "operatingSystems": [
+        "linux"
+      ],
+      "path": "/tmp/ld.py"
+    },
+    {
+      "operatingSystems": [
+        "macos"
+      ],
+      "path": "/Library/Caches/com.apple.act.mond"
+    }
+  ],
+  "gitIndicators": [
+    "plain-crypto-js",
+    "axios@1.14.1",
+    "axios@0.30.4",
+    "\"axios\": \"1.14.1\"",
+    "\"axios\": \"0.30.4\"",
+    "sfrclak.com",
+    "142.11.206.73",
+    "packages.npm.org/product0",
+    "packages.npm.org/product1",
+    "packages.npm.org/product2"
+  ],
+  "gitExposureWindows": [
+    {
+      "startUtc": "2026-03-31T00:21:00Z",
+      "endUtc": "2026-03-31T03:15:00Z"
+    }
+  ],
+  "reportAffectedItems": [
+    "axios 1.14.1",
+    "axios 0.30.4",
+    "plain-crypto-js"
+  ]
+}

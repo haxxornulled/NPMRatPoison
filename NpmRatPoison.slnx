@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="NpmRatPoison.Application/NpmRatPoison.Application.csproj" />
+  <Project Path="NpmRatPoison.Domain/NpmRatPoison.Domain.csproj" />
+  <Project Path="NpmRatPoison.Infrastructure/NpmRatPoison.Infrastructure.csproj" />
+  <Project Path="NpmRatPoison.Tests/NpmRatPoison.Tests.csproj" />
+  <Project Path="NpmRatPoison/NpmRatPoison.csproj" />
+</Solution>

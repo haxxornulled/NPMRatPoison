@@ -1,0 +1,169 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: "Segoe UI", "IBM Plex Sans", sans-serif;
+    background: linear-gradient(180deg, #eef5ff 0%, #f8fbff 45%, #ffffff 100%);
+    color: #132033;
+}
+
+a {
+    color: #005ea6;
+}
+
+button, input {
+    font: inherit;
+}
+
+button {
+    border: none;
+    border-radius: 10px;
+    background: #103b73;
+    color: #fff;
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+}
+
+button.secondary {
+    background: #dbe7f5;
+    color: #163253;
+}
+
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #c9d8ea;
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
+    background: #fff;
+}
+
+label {
+    display: block;
+    font-size: 0.92rem;
+    margin-bottom: 0.35rem;
+    color: #41556c;
+}
+
+.checkbox {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    margin: 0.6rem 0 1rem;
+}
+
+.checkbox input {
+    width: auto;
+}
+
+.shell {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.topbar h1, .hero-card h2, .card h3 {
+    margin: 0;
+}
+
+.topbar-meta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    color: #49617f;
+}
+
+.eyebrow {
+    margin: 0 0 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    color: #607790;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.hero-card, .card {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #d7e2f0;
+    border-radius: 18px;
+    padding: 1.25rem;
+    box-shadow: 0 16px 40px rgba(17, 37, 68, 0.08);
+}
+
+.hero-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.stack-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.stack-list li {
+    border-top: 1px solid #e6eef8;
+    padding-top: 0.9rem;
+}
+
+.stack-list li:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
+.artifact-links {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.35rem;
+}
+
+@media (max-width: 720px) {
+    .shell {
+        padding: 1rem;
+    }
+
+    .topbar, .hero-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

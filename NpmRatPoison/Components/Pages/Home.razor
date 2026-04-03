@@ -1,0 +1,203 @@
+@page "/"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject ScanDashboardState DashboardState
+@inject DashboardScanCoordinator Coordinator
+
+<PageTitle>NpmRatPoison Dashboard</PageTitle>
+
+<section class="hero-card">
+    <div>
+        <p class="eyebrow">Lifecycle</p>
+        <h2>@lifecycle.Phase</h2>
+        <p>@lifecycle.Message</p>
+        @if (!string.IsNullOrWhiteSpace(lifecycle.BaseAddress))
+        {
+            <p><strong>Base address:</strong> @lifecycle.BaseAddress</p>
+        }
+        <p><strong>Updated:</strong> @lifecycle.UpdatedUtc.LocalDateTime</p>
+    </div>
+    <div class="hero-actions">
+        <button class="secondary" @onclick="RefreshAsync" disabled="@isBusy">Refresh reports</button>
+    </div>
+</section>
+
+<section class="grid">
+    <article class="card">
+        <p class="eyebrow">Scoped Cleanup</p>
+        <h3>Dry-run a local path</h3>
+        <label>Root path</label>
+        <input @bind="scopedPath" />
+        <label class="checkbox">
+            <input type="checkbox" @bind="enableHostRemediation" />
+            <span>Include host remediation checks</span>
+        </label>
+        <button @onclick="RunScopedAsync" disabled="@isBusy">Run scoped dry-run</button>
+    </article>
+
+    <article class="card">
+        <p class="eyebrow">Fleet Sweep</p>
+        <h3>All-drive discovery</h3>
+        <label class="checkbox">
+            <input type="checkbox" @bind="gitHubOnly" />
+            <span>GitHub-linked repos only</span>
+        </label>
+        <button @onclick="RunAllDrivesAsync" disabled="@isBusy">Run all-drive dry-run</button>
+    </article>
+
+    <article class="card">
+        <p class="eyebrow">Remote Repo</p>
+        <h3>GitHub file-fetch scan</h3>
+        <label>Repository</label>
+        <input @bind="remoteRepository" placeholder="owner/name" />
+        <label>Token (optional)</label>
+        <input @bind="remoteToken" type="password" placeholder="PAT or leave blank for env vars" />
+        <button @onclick="RunRemoteAsync" disabled="@isBusy">Run remote scan</button>
+    </article>
+</section>
+
+<section class="grid">
+    <article class="card">
+        <p class="eyebrow">Recent Runs</p>
+        <h3>Execution history</h3>
+        @if (runs.Count == 0)
+        {
+            <p>No dashboard-triggered runs yet.</p>
+        }
+        else
+        {
+            <ul class="stack-list">
+                @foreach (var run in runs)
+                {
+                    <li>
+                        <strong>@run.Title</strong>
+                        <div>@run.Status | Exit @(run.ExitCode?.ToString() ?? "-")</div>
+                        <div>@run.Summary</div>
+                        <div>@run.StartedUtc.LocalDateTime</div>
+                        @if (run.ReportFiles.Count > 0)
+                        {
+                            <div class="artifact-links">
+                                @foreach (var reportFile in run.ReportFiles)
+                                {
+                                    <a href="@reportFile" target="_blank">artifact</a>
+                                }
+                            </div>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </article>
+
+    <article class="card">
+        <p class="eyebrow">Reports</p>
+        <h3>Latest artifacts</h3>
+        @if (artifacts.Count == 0)
+        {
+            <p>No report artifacts have been generated yet.</p>
+        }
+        else
+        {
+            <ul class="stack-list">
+                @foreach (var artifact in artifacts)
+                {
+                    <li>
+                        <a href="@artifact.Url" target="_blank">@artifact.Name</a>
+                        <div>@artifact.LastWriteTimeUtc.LocalDateTime</div>
+                    </li>
+                }
+            </ul>
+        }
+    </article>
+</section>
+
+@code {
+    private DashboardLifecycleSnapshot lifecycle = new("Starting", DateTimeOffset.UtcNow, "Initializing dashboard", null);
+    private IReadOnlyList<DashboardRunSnapshot> runs = [];
+    private IReadOnlyList<DashboardArtifactFile> artifacts = [];
+    private string scopedPath = string.Empty;
+    private string remoteRepository = "haxxornulled/VapeCache";
+    private string remoteToken = string.Empty;
+    private bool gitHubOnly = true;
+    private bool enableHostRemediation;
+    private bool isBusy;
+
+    protected override void OnInitialized()
+    {
+        scopedPath = Coordinator.DefaultRootPath;
+        DashboardState.Changed += HandleDashboardChanged;
+        SyncFromState();
+    }
+
+    public void Dispose()
+    {
+        DashboardState.Changed -= HandleDashboardChanged;
+    }
+
+    private async Task RunScopedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(scopedPath))
+        {
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            await Coordinator.RunScopedDryRunAsync(scopedPath, enableHostRemediation);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task RunAllDrivesAsync()
+    {
+        isBusy = true;
+        try
+        {
+            await Coordinator.RunAllDrivesDryRunAsync(gitHubOnly);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task RunRemoteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(remoteRepository))
+        {
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            await Coordinator.RunRemoteGitHubRepoAsync(remoteRepository, remoteToken);
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private Task RefreshAsync()
+    {
+        return Coordinator.RefreshArtifactsAsync();
+    }
+
+    private void HandleDashboardChanged()
+    {
+        SyncFromState();
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void SyncFromState()
+    {
+        lifecycle = DashboardState.GetLifecycle();
+        runs = DashboardState.GetRuns();
+        artifacts = DashboardState.GetArtifacts();
+    }
+}
